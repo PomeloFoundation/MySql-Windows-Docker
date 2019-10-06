@@ -3,4 +3,31 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
-  - pwsh: docker build -t docker.pkg.github.com/pomelofoundation/mysql-windows-docker/mysql-windows-docker:latest .
+  - pwsh: docker build -t pomelofoundation/mysql-windows:8-ltsc2019 .
+    displayName: Build Image
+  - pwsh: |
+      docker run -d --name mysql pomelofoundation/mysql-windows:8-ltsc2019
+      $started=$false
+      For ($i=0; $i -le 180; $i++) {
+        docker exec mysql mysqladmin -h localhost -P 3306 -u root status
+        if ($LastExitCode -eq 0) {
+          $started=$true
+          break;
+        }
+        Start-Sleep 1
+      }
+      docker logs mysql
+      if (!$started) {
+        Write-Error "mysql container failed to start in 180 seconds"
+        exit 1
+      }
+    errorActionPreference: continue
+    displayName: Test Image
+  - task: Docker@2
+    displayName: Push Image
+    inputs:
+      containerRegistry: DockerHub
+      repository: pomelofoundation/mysql-windows
+      command: push
+      tags: 8-ltsc2019
+    condition: and( succeeded(), ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master') )
