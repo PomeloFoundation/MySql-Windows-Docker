@@ -1,0 +1,6 @@
+jobs:
+- job: Windows
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - pwsh: docker build -t docker.pkg.github.com/pomelofoundation/mysql-windows-docker/mysql-windows-docker:latest .
