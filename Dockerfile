@@ -4,9 +4,13 @@ ENV chocolateyUseWindowsCompression false
 
 RUN powershell -Command \
     iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1')); \
-    choco feature disable --name showDownloadProgress
+    choco feature disable --name showDownloadProgress; \
+    choco install -y mysql --version=8.0.17;
 
-RUN choco install -y mysql --version=8.0.17
+COPY stage/ /
+
+RUN powershell -Command \
+    sc.exe config MySQL binPath= "C:\tools\mysql\current\bin\mysqld --defaults-file=C:\tools\mysql\current\my.ini MySQL";
 
 # monitor event log
 # https://stackoverflow.com/a/55274110/1419658
