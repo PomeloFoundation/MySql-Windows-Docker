@@ -6,19 +6,30 @@ jobs:
   - pwsh: docker build -t pomelofoundation/mysql-windows:8-ltsc2019 .
     displayName: Build Image
   - pwsh: |
-      docker run -d --name mysql pomelofoundation/mysql-windows:8-ltsc2019
+      docker run `
+        -d `
+        --name "mysql" `
+        -e "MYSQL_ROOT_PASSWORD=test" `
+        -p "3306:3306" `
+        pomelofoundation/mysql-windows:8-ltsc2019
+
       $started=$false
-      For ($i=0; $i -le 180; $i++) {
-        docker exec mysql mysqladmin -h localhost -P 3306 -u root status
+      For ($i=0; $i -le 240; $i++) {
+        $status = (docker container inspect mysql --format '{{ .State.Status }}')
+        if ($status -eq "exited") {
+          break
+        }
+        docker exec mysql mysqladmin -h localhost -P 3306 -u root -ptest status
         if ($LastExitCode -eq 0) {
           $started=$true
-          break;
+          break
         }
         Start-Sleep 1
       }
+      
       docker logs mysql
       if (!$started) {
-        Write-Error "mysql container failed to start in 180 seconds"
+        Write-Error "mysql container failed to start in 240 seconds"
         exit 1
       }
     errorActionPreference: continue
